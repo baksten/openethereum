@@ -64,6 +64,9 @@ pub struct EthashParams {
     /// Block reward code. This overrides the block reward contract address.
     pub block_reward_contract_code: Option<Bytes>,
 
+    /// CheapETH hardfork transistion.
+    pub cheapeth_hardfork_transition: Option<Uint>,
+
     /// See main EthashParams docs.
     pub dao_hardfork_transition: Option<Uint>,
     /// See main EthashParams docs.
@@ -124,6 +127,7 @@ mod tests {
 				"difficultyBoundDivisor": "0x0800",
 				"durationLimit": "0x0d",
 				"homesteadTransition": "0x42",
+				"cheapethHardforkTransition": "0x43",
 				"blockReward": "0x100",
 				"daoHardforkTransition": "0x08",
 				"daoHardforkBeneficiary": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
@@ -168,6 +172,7 @@ mod tests {
                     metropolis_difficulty_increment_divisor: None,
                     duration_limit: Some(Uint(U256::from(0x0d))),
                     homestead_transition: Some(Uint(U256::from(0x42))),
+                    cheapeth_hardfork_transition: Some(Uint(U256::from(0x43))),
                     block_reward: Some(BlockReward::Single(Uint(U256::from(0x100)))),
                     block_reward_contract_address: None,
                     block_reward_contract_code: None,

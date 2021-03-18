@@ -39,6 +39,7 @@ use crate::configuration;
 #[derive(Debug, PartialEq)]
 pub enum SpecType {
     Foundation,
+    CheapETH,
     Poanet,
     Xdai,
     Volta,
@@ -70,6 +71,7 @@ impl str::FromStr for SpecType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let spec = match s {
             "eth" | "ethereum" | "foundation" | "mainnet" => SpecType::Foundation,
+            "cth" | "cheapeth" => SpecType::CheapETH,
             "poanet" | "poacore" => SpecType::Poanet,
             "xdai" => SpecType::Xdai,
             "volta" => SpecType::Volta,
@@ -96,6 +98,7 @@ impl fmt::Display for SpecType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match *self {
             SpecType::Foundation => "foundation",
+            SpecType::CheapETH => "cheapeth",
             SpecType::Poanet => "poanet",
             SpecType::Xdai => "xdai",
             SpecType::Volta => "volta",
@@ -122,6 +125,7 @@ impl SpecType {
         let params = params.into();
         match *self {
             SpecType::Foundation => Ok(ethereum::new_foundation(params)),
+            SpecType::CheapETH => Ok(ethereum::new_cheapeth(params)),
             SpecType::Poanet => Ok(ethereum::new_poanet(params)),
             SpecType::Xdai => Ok(ethereum::new_xdai(params)),
             SpecType::Volta => Ok(ethereum::new_volta(params)),
@@ -385,6 +389,8 @@ mod tests {
         assert_eq!(SpecType::Foundation, "ethereum".parse().unwrap());
         assert_eq!(SpecType::Foundation, "foundation".parse().unwrap());
         assert_eq!(SpecType::Foundation, "mainnet".parse().unwrap());
+        assert_eq!(SpecType::CheapETH, "cth".parse().unwrap());
+        assert_eq!(SpecType::CheapETH, "cheapeth".parse().unwrap());
         assert_eq!(SpecType::Poanet, "poanet".parse().unwrap());
         assert_eq!(SpecType::Poanet, "poacore".parse().unwrap());
         assert_eq!(SpecType::Xdai, "xdai".parse().unwrap());
@@ -414,6 +420,7 @@ mod tests {
     #[test]
     fn test_spec_type_display() {
         assert_eq!(format!("{}", SpecType::Foundation), "foundation");
+        assert_eq!(format!("{}", SpecType::CheapETH), "cheapeth");
         assert_eq!(format!("{}", SpecType::Poanet), "poanet");
         assert_eq!(format!("{}", SpecType::Xdai), "xdai");
         assert_eq!(format!("{}", SpecType::Volta), "volta");
