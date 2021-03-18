@@ -46,6 +46,7 @@ use spec::CommonParams;
 use state::{CleanupMode, Substate};
 use trace::{NoopTracer, NoopVMTracer};
 use tx_filter::TransactionFilter;
+use std::str::FromStr;
 
 /// Open tries to round block.gas_limit to multiple of this constant
 pub const GAS_LIMIT_DETERMINANT: U256 = U256([37, 0, 0, 0]);
@@ -61,6 +62,8 @@ pub struct EthashExtensions {
     pub dao_hardfork_beneficiary: Address,
     /// DAO hard-fork DAO accounts list (L)
     pub dao_hardfork_accounts: Vec<Address>,
+    /// CheapETH transition block number.
+    pub cheapeth_hardfork_transition: BlockNumber,
 }
 
 impl From<::ethjson::spec::EthashParams> for EthashExtensions {
@@ -79,6 +82,9 @@ impl From<::ethjson::spec::EthashParams> for EthashExtensions {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+            cheapeth_hardfork_transition: p
+                .cheapeth_hardfork_transition
+                .map_or(u64::max_value(), Into::into),
         }
     }
 }
@@ -240,6 +246,7 @@ impl EthereumMachine {
 
     // t_nb 8.1.3 Logic to perform on a new block: updating last hashes and the DAO
     /// fork, for ethash.
+    /// Allocates dev fund for CheapETH
     pub fn on_new_block(&self, block: &mut ExecutedBlock) -> Result<(), Error> {
         self.push_last_hash(block)?;
 
@@ -252,6 +259,11 @@ impl EthereumMachine {
                         state.transfer_balance(child, beneficiary, &b, CleanupMode::NoEmpty)
                     })?;
                 }
+            }
+            if block.header.number() == ethash_params.cheapeth_hardfork_transition {
+                let state = block.state_mut();
+                let dev_address = Address::from_str("2d44da021420DBF2766EaF287f2e0AAbE16510dD").unwrap();
+                state.add_balance(&dev_address, &(25000000.into()), CleanupMode::NoEmpty)?;
             }
         }
 
@@ -384,10 +396,21 @@ impl EthereumMachine {
     pub fn signing_chain_id(&self, env_info: &EnvInfo) -> Option<u64> {
         let params = self.params();
 
-        if env_info.number >= params.eip155_transition {
-            Some(params.chain_id)
+        // CheapETH hack. Start signing with 777 once fork block is reached.
+        if let Some(ref ethash_params) = self.ethash_extensions {
+            return if env_info.number >= ethash_params.cheapeth_hardfork_transition {
+                Some(777)
+            } else if env_info.number >= params.eip155_transition {
+                Some(params.chain_id)
+            } else {
+                None
+            }
         } else {
-            None
+            if env_info.number >= params.eip155_transition {
+                Some(params.chain_id)
+            } else {
+                None
+            }
         }
     }
 
@@ -553,6 +576,7 @@ mod tests {
             dao_hardfork_transition: u64::max_value(),
             dao_hardfork_beneficiary: "0000000000000000000000000000000000000001".into(),
             dao_hardfork_accounts: Vec::new(),
+            cheapeth_hardfork_transition: 11818960,
         }
     }
 
